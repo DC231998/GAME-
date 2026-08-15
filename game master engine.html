@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Umbral — Motor de Aventuras</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --ink:#181310;
+    --ink-2:#241c17;
+    --parchment:#e9dcc0;
+    --parchment-dim:#c9b98f;
+    --blood:#8a2e26;
+    --blood-bright:#b5473c;
+    --gold:#b8935a;
+    --gold-dim:#7d6640;
+    --sepia:#6f5f47;
+    --ok:#5c7a52;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(138,46,38,0.10), transparent 55%),
+      radial-gradient(ellipse at 90% 100%, rgba(184,147,90,0.08), transparent 50%),
+      var(--ink);
+    color:var(--parchment);
+    font-family:'Crimson Text', serif;
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .frame{
+    width:100%;
+    max-width:1180px;
+    border:1px solid var(--gold-dim);
+    background:linear-gradient(180deg, rgba(233,220,192,0.03), transparent 20%);
+    position:relative;
+  }
+  .frame::before{
+    content:'';
+    position:absolute; inset:6px;
+    border:1px solid rgba(184,147,90,0.25);
+    pointer-events:none;
+  }
+
+  header.top{
+    padding:22px 30px 16px;
+    text-align:center;
+    border-bottom:1px solid rgba(184,147,90,0.25);
+  }
+  header.top h1{
+    font-family:'Cinzel', serif;
+    letter-spacing:0.12em;
+    font-weight:700;
+    font-size:26px;
+    margin:0 0 4px;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+  header.top p{
+    margin:0;
+    font-style:italic;
+    color:var(--parchment-dim);
+    font-size:14px;
+  }
+
+  /* ---------- SETUP SCREEN ---------- */
+  .setup{ padding:34px 40px 40px; }
+  .setup h2{
+    font-family:'Cinzel', serif;
+    font-size:18px;
+    letter-spacing:0.06em;
+    color:var(--gold);
+    margin:0 0 18px;
+    text-align:center;
+    font-weight:600;
+  }
+  .genres{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+    margin-bottom:26px;
+  }
+  .genre-card{
+    border:1px solid var(--gold-dim);
+    background:rgba(184,147,90,0.04);
+    padding:16px 18px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s, transform .15s;
+  }
+  .genre-card:hover{ border-color:var(--gold); background:rgba(184,147,90,0.09); transform:translateY(-1px); }
+  .genre-card.selected{ border-color:var(--blood-bright); background:rgba(138,46,38,0.14); }
+  .genre-card h3{
+    font-family:'Cinzel', serif;
+    font-size:14px; letter-spacing:0.05em;
+    margin:0 0 6px; color:var(--parchment);
+    text-transform:uppercase;
+  }
+  .genre-card p{ margin:0; font-size:13.5px; color:var(--parchment-dim); line-height:1.4; }
+
+  label.field-label{
+    display:block; font-family:'Cinzel',serif; font-size:12px; letter-spacing:0.08em;
+    color:var(--gold-dim); text-transform:uppercase; margin-bottom:6px;
+  }
+  .field{ margin-bottom:18px; }
+  input[type=text], textarea{
+    width:100%;
+    background:rgba(0,0,0,0.25);
+    border:1px solid var(--gold-dim);
+    color:var(--parchment);
+    font-family:'Crimson Text', serif;
+    font-size:15.5px;
+    padding:11px 13px;
+    resize:vertical;
+  }
+  input[type=text]:focus, textarea:focus{ outline:none; border-color:var(--gold); }
+  textarea{ min-height:64px; }
+
+  .btn{
+    font-family:'Cinzel', serif;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    background:var(--blood);
+    color:var(--parchment);
+    border:1px solid var(--blood-bright);
+    padding:12px 24px;
+    cursor:pointer;
+    transition:background .15s, transform .1s;
+  }
+  .btn:hover{ background:var(--blood-bright); }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.45; cursor:not-allowed; }
+  .btn.ghost{
+    background:transparent; color:var(--gold); border-color:var(--gold-dim);
+  }
+  .btn.ghost:hover{ border-color:var(--gold); background:rgba(184,147,90,0.08); }
+
+  .setup-actions{ text-align:center; margin-top:8px; }
+  .err{ color:var(--blood-bright); font-size:13.5px; text-align:center; margin-top:10px; min-height:18px; }
+
+  /* ---------- GAME SCREEN ---------- */
+  .game{ display:none; }
+  .game.active{ display:grid; grid-template-columns:1fr 260px; }
+
+  .stage{
+    padding:26px 30px;
+    border-right:1px solid rgba(184,147,90,0.2);
+    min-height:520px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .log{
+    flex:1;
+    overflow-y:auto;
+    max-height:52vh;
+    padding-right:6px;
+  }
+  .log::-webkit-scrollbar{ width:6px; }
+  .log::-webkit-scrollbar-thumb{ background:var(--gold-dim); }
+
+  .turn{ margin-bottom:22px; }
+  .turn .who{
+    font-family:'Cinzel', serif; font-size:11px; letter-spacing:0.1em;
+    color:var(--gold-dim); text-transform:uppercase; margin-bottom:5px;
+  }
+  .turn.player .who{ color:var(--blood-bright); }
+  .turn .txt{ font-size:16.5px; line-height:1.65; }
+  .turn.player .txt{ font-style:italic; color:var(--parchment-dim); }
+  .turn.narration .txt p{ margin:0 0 10px; }
+  .cursor{ display:inline-block; width:8px; }
+
+  .choices{
+    display:flex; flex-wrap:wrap; gap:8px;
+    margin-top:16px;
+  }
+  .choice-btn{
+    background:rgba(184,147,90,0.06);
+    border:1px solid var(--gold-dim);
+    color:var(--parchment);
+    font-family:'Crimson Text', serif;
+    font-size:14.5px;
+    padding:8px 14px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .choice-btn:hover{ border-color:var(--gold); background:rgba(184,147,90,0.14); }
+
+  .input-row{
+    display:flex; gap:10px; margin-top:18px;
+    border-top:1px solid rgba(184,147,90,0.2);
+    padding-top:16px;
+  }
+  .input-row input{ flex:1; }
+
+  .thinking{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px; color:var(--gold-dim);
+    letter-spacing:0.04em;
+    margin:8px 0 0;
+    display:none;
+  }
+  .thinking.active{ display:block; }
+
+  /* ---------- SIDEBAR ---------- */
+  .sheet{ padding:26px 22px; }
+  .sheet h4{
+    font-family:'Cinzel', serif; font-size:12px; letter-spacing:0.1em;
+    color:var(--gold-dim); text-transform:uppercase; margin:0 0 10px;
+    border-bottom:1px solid rgba(184,147,90,0.2); padding-bottom:6px;
+  }
+  .char-name{
+    font-family:'Cinzel', serif; font-size:17px; color:var(--gold);
+    margin-bottom:16px;
+  }
+  .hp-row{ margin-bottom:18px; }
+  .hp-label{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace; font-size:11.5px;
+    color:var(--parchment-dim); margin-bottom:5px;
+  }
+  .hp-bar{ height:9px; background:rgba(0,0,0,0.35); border:1px solid var(--gold-dim); }
+  .hp-fill{ height:100%; background:linear-gradient(90deg, var(--blood), var(--blood-bright)); transition:width .4s ease; }
+
+  .inv-list{ list-style:none; padding:0; margin:0 0 20px; }
+  .inv-list li{
+    font-size:14px; padding:5px 0 5px 14px; position:relative;
+    color:var(--parchment-dim); border-bottom:1px dotted rgba(184,147,90,0.15);
+  }
+  .inv-list li::before{ content:'✦'; position:absolute; left:0; color:var(--gold-dim); font-size:10px; top:8px; }
+  .inv-empty{ font-size:13px; color:var(--sepia); font-style:italic; }
+
+  .restart-wrap{ margin-top:24px; }
+  .restart-wrap .btn{ width:100%; }
+
+  .gameover-banner{
+    border:1px solid var(--blood-bright);
+    background:rgba(138,46,38,0.15);
+    padding:16px 18px; margin-top:16px;
+    text-align:center;
+  }
+  .gameover-banner h3{
+    font-family:'Cinzel', serif; color:var(--blood-bright); margin:0 0 8px;
+    letter-spacing:0.08em; font-size:15px; text-transform:uppercase;
+  }
+  .gameover-banner p{ margin:0; font-size:14px; color:var(--parchment-dim); }
+
+  footer.note{
+    text-align:center; padding:14px; font-size:11.5px; color:var(--sepia);
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  @media (max-width:760px){
+    .game.active{ grid-template-columns:1fr; }
+    .stage{ border-right:none; border-bottom:1px solid rgba(184,147,90,0.2); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .genre-card, .choice-btn, .btn, .hp-fill{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <header class="top">
+    <h1>El Umbral</h1>
+    <p>un motor de aventuras narrado por un Game Master de IA</p>
+  </header>
+
+  <!-- SETUP -->
+  <div class="setup" id="setupScreen">
+    <h2>Elige el mundo de tu historia</h2>
+    <div class="genres" id="genreGrid"></div>
+
+    <div class="field">
+      <label class="field-label" for="customSetting">O describe tu propio escenario (opcional)</label>
+      <textarea id="customSetting" placeholder="Ej: Un faro abandonado en una costa donde el mar susurra secretos de marineros ahogados..."></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="charName">Nombre de tu personaje</label>
+      <input type="text" id="charName" placeholder="Ej: Elira Vane">
+    </div>
+
+    <div class="setup-actions">
+      <button class="btn" id="startBtn">Comenzar la aventura</button>
+      <div class="err" id="setupErr"></div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="game" id="gameScreen">
+    <div class="stage">
+      <div class="log" id="log"></div>
+      <p class="thinking" id="thinking">el narrador está tejiendo el destino...</p>
+      <div class="input-row">
+        <input type="text" id="actionInput" placeholder="¿Qué haces?" autocomplete="off">
+        <button class="btn" id="sendBtn">Actuar</button>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="char-name" id="sheetName">—</div>
+
+      <div class="hp-row">
+        <div class="hp-label"><span>VITALIDAD</span><span id="hpText">10/10</span></div>
+        <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:100%"></div></div>
+      </div>
+
+      <h4>Inventario</h4>
+      <ul class="inv-list" id="invList"><li class="inv-empty">vacío</li></ul>
+
+      <div id="gameOverSlot"></div>
+
+      <div class="restart-wrap">
+        <button class="btn ghost" id="restartBtn">Nueva aventura</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">motor experimental · la IA improvisa la historia en cada turno</footer>
+</div>
+
+<script>
+(function(){
+  const GENRES = [
+    { id:'fantasy', name:'Fantasía Oscura', desc:'Reinos en ruinas, magia prohibida y dioses que ya no responden.',
+      seed:'un reino de fantasía sombría, con magia decadente, ruinas antiguas y facciones en guerra' },
+    { id:'scifi', name:'Ciencia Ficción', desc:'Estaciones a la deriva, inteligencias artificiales y fronteras del espacio profundo.',
+      seed:'una colonia espacial aislada en los confines conocidos, con tecnología en descomposición e inteligencias artificiales de lealtad incierta' },
+    { id:'horror', name:'Horror', desc:'Casas que recuerdan, pueblos que ocultan algo y silencios que no deberían existir.',
+      seed:'un pueblo rural aislado donde algo antiguo despertó bajo la tierra, con una atmósfera de terror psicológico creciente' },
+    { id:'mystery', name:'Misterio Noir', desc:'Ciudades lluviosas, secretos enterrados y nadie dice la verdad completa.',
+      seed:'una ciudad noir de los años 40 empapada de lluvia, corrupción política y secretos que varias facciones matarían por ocultar' },
+    { id:'pirate', name:'Piratas', desc:'Mares infestados de leyendas, tesoros malditos y tripulaciones traicioneras.',
+      seed:'los mares del Caribe en la edad dorada de la piratería, con islas malditas, tesoros legendarios y tripulaciones al borde del motín' },
+    { id:'western', name:'Far West', desc:'Pueblos polvorientos, pistoleros sin ley y deudas de sangre pendientes.',
+      seed:'un territorio fronterizo del viejo oeste sin ley clara, con pistoleros, ferrocarriles y deudas de sangre por saldar' },
+  ];
+
+  let selectedGenre = null;
+
+  const setupScreen = document.getElementById('setupScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const genreGrid = document.getElementById('genreGrid');
+  const customSetting = document.getElementById('customSetting');
+  const charNameInput = document.getElementById('charName');
+  const startBtn = document.getElementById('startBtn');
+  const setupErr = document.getElementById('setupErr');
+
+  const logEl = document.getElementById('log');
+  const thinkingEl = document.getElementById('thinking');
+  const actionInput = document.getElementById('actionInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const sheetName = document.getElementById('sheetName');
+  const hpText = document.getElementById('hpText');
+  const hpFill = document.getElementById('hpFill');
+  const invList = document.getElementById('invList');
+  const gameOverSlot = document.getElementById('gameOverSlot');
+
+  GENRES.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'genre-card';
+    card.innerHTML = `<h3>${g.name}</h3><p>${g.desc}</p>`;
+    card.addEventListener('click', () => {
+      selectedGenre = g;
+      document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+    genreGrid.appendChild(card);
+  });
+
+  // ---- game state ----
+  let state = null;
+  /*
+    state = {
+      characterName, maxHealth, health, inventory:[],
+      summary: string (rolling story summary),
+      recent: [{role,content}] last few full exchanges,
+      turnCount: number,
+      gameOver: bool
+    }
+  */
+
+  function resetToSetup(){
+    state = null;
+    gameScreen.classList.remove('active');
+    setupScreen.style.display = 'block';
+    logEl.innerHTML = '';
+    gameOverSlot.innerHTML = '';
+    setupErr.textContent = '';
+  }
+
+  function buildSystemPrompt(settingSeed){
+    return `Eres el Game Master de un juego de rol narrativo de texto en español. El escenario base es: ${settingSeed}.
+
+Tu trabajo:
+- Narras en segunda persona ("tú"), con prosa evocadora pero concisa (2 a 4 párrafos cortos por turno).
+- Reaccionas de forma lógica y con consecuencias reales a las acciones del jugador, incluyendo consecuencias negativas si actúa de forma imprudente.
+- Mantienes coherencia con lo ya ocurrido (usa el resumen de la historia y los últimos turnos que se te dan).
+- Introduces personajes, peligros, objetos y giros de forma orgánica; no todo debe salir bien para el jugador.
+- Puedes terminar la partida (game_over=true) si el personaje muere o la historia llega a un final natural (victoria, derrota o cierre narrativo).
+- Nunca rompas el personaje de narrador ni menciones que eres una IA.
+
+DEBES responder ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks, con exactamente estos campos:
+{
+  "narration": "string - la narración de este turno en español",
+  "summary": "string - resumen actualizado y breve (2-3 frases) de toda la historia hasta ahora, para recordar el contexto",
+  "choices": ["string", "string", "string"] - de 2 a 4 sugerencias breves de acciones posibles (el jugador también puede escribir algo distinto),
+  "health_delta": number - cambio de vitalidad este turno (negativo si hay daño, positivo si se cura, 0 si no cambia),
+  "add_items": ["string"] - objetos nuevos obtenidos este turno (vacío si ninguno),
+  "remove_items": ["string"] - objetos perdidos o usados este turno (vacío si ninguno),
+  "game_over": boolean,
+  "game_over_reason": "string - solo si game_over es true, explica brevemente el final"
+}`;
+  }
+
+  function renderTurn(role, text){
+    const div = document.createElement('div');
+    div.className = 'turn ' + (role === 'player' ? 'player' : 'narration');
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = role === 'player' ? '— ' + state.characterName : 'el narrador';
+    div.appendChild(who);
+    const txt = document.createElement('div');
+    txt.className = 'txt';
+    div.appendChild(txt);
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+    return txt;
+  }
+
+  function typewrite(el, text, cb){
+    const paras = text.split(/\n+/).filter(Boolean);
+    let pi = 0;
+    function nextPara(){
+      if (pi >= paras.length){ if (cb) cb(); return; }
+      const p = document.createElement('p');
+      el.appendChild(p);
+      const chars = paras[pi].split('');
+      let ci = 0;
+      const speed = chars.length > 400 ? 4 : 10;
+      function step(){
+        if (ci < chars.length){
+          p.textContent += chars[ci];
+          ci++;
+          logEl.scrollTop = logEl.scrollHeight;
+          setTimeout(step, speed);
+        } else {
+          pi++;
+          nextPara();
+        }
+      }
+      step();
+    }
+    nextPara();
+  }
+
+  function renderChoices(choices){
+    const wrap = document.createElement('div');
+    wrap.className = 'choices';
+    (choices || []).forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'choice-btn';
+      b.textContent = c;
+      b.addEventListener('click', () => submitAction(c));
+      wrap.appendChild(b);
+    });
+    logEl.appendChild(wrap);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function updateSheet(){
+    sheetName.textContent = state.characterName;
+    hpText.textContent = `${Math.max(0,state.health)}/${state.maxHealth}`;
+    const pct = Math.max(0, Math.min(100, (state.health / state.maxHealth) * 100));
+    hpFill.style.width = pct + '%';
+    invList.innerHTML = '';
+    if (!state.inventory.length){
+      invList.innerHTML = '<li class="inv-empty">vacío</li>';
+    } else {
+      state.inventory.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        invList.appendChild(li);
+      });
+    }
+  }
+
+  function setBusy(busy){
+    thinkingEl.classList.toggle('active', busy);
+    actionInput.disabled = busy;
+    sendBtn.disabled = busy;
+  }
+
+  async function callGM(userMessage){
+    const systemPrompt = buildSystemPrompt(state.settingSeed);
+    const contextMsg = `[Resumen de la historia hasta ahora]: ${state.summary || '(inicio de la historia)'}\n[Estado del personaje]: ${state.characterName}, vitalidad ${state.health}/${state.maxHealth}, inventario: ${state.inventory.join(', ') || 'ninguno'}.`;
+
+    const messages = [];
+    messages.push({ role: 'user', content: contextMsg });
+    // últimos intercambios completos para continuidad fina
+    state.recent.forEach(m => messages.push(m));
+    messages.push({ role: 'user', content: userMessage });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: messages
+      })
+    });
+
+    if (!response.ok) throw new Error('Fallo de red al contactar al narrador');
+    const data = await response.json();
+    const raw = (data.content || []).map(b => b.text || '').join('\n').trim();
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/```$/,'').trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch(e) {
+      // fallback: intenta extraer el primer bloque {...}
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+      else throw new Error('Respuesta del narrador ilegible');
+    }
+    return parsed;
+  }
+
+  function submitAction(text){
+    text = (text || actionInput.value).trim();
+    if (!text || !state || state.gameOver) return;
+    actionInput.value = '';
+
+    const pTxt = renderTurn('player', text);
+    pTxt.textContent = text;
+
+    setBusy(true);
+    callGM(text).then(res => {
+      // actualizar estado
+      state.health = Math.max(0, Math.min(state.maxHealth, state.health + (res.health_delta || 0)));
+      (res.remove_items || []).forEach(it => {
+        const idx = state.inventory.findIndex(x => x.toLowerCase() === String(it).toLowerCase());
+        if (idx >= 0) state.inventory.splice(idx,1);
+      });
+      (res.add_items || []).forEach(it => state.inventory.push(it));
+      state.summary = res.summary || state.summary;
+
+      state.recent.push({ role:'user', content: text });
+      state.recent.push({ role:'assistant', content: JSON.stringify(res) });
+      if (state.recent.length > 8) state.recent = state.recent.slice(-8);
+
+      updateSheet();
+
+      const nTxt = renderTurn('narration', '');
+      setBusy(false);
+      typewrite(nTxt, res.narration || '...', () => {
+        if (res.game_over){
+          state.gameOver = true;
+          gameOverSlot.innerHTML = `<div class="gameover-banner"><h3>Fin de la partida</h3><p>${(res.game_over_reason || '').replace(/</g,'&lt;')}</p></div>`;
+          actionInput.disabled = true;
+          sendBtn.disabled = true;
+        } else if (state.health <= 0) {
+          state.gameOver = true;
+          gameOverSlot.innerHTML = `<div class="gameover-banner"><h3>Has caído</h3><p>Tu vitalidad ha llegado a cero.</p></div>`;
+          actionInput.disabled = true;
+          sendBtn.disabled = true;
+        } else {
+          renderChoices(res.choices);
+        }
+      });
+    }).catch(err => {
+      setBusy(false);
+      const eTxt = renderTurn('narration', '');
+      eTxt.innerHTML = `<p style="color:var(--blood-bright)">El hilo de la historia se enredó (${(err.message||'error desconocido').replace(/</g,'&lt;')}). Intenta tu acción de nuevo.</p>`;
+    });
+  }
+
+  startBtn.addEventListener('click', () => {
+    setupErr.textContent = '';
+    const name = charNameInput.value.trim() || 'Viajero';
+    const custom = customSetting.value.trim();
+    if (!selectedGenre && !custom){
+      setupErr.textContent = 'Elige un mundo o describe tu propio escenario.';
+      return;
+    }
+    const seed = custom || selectedGenre.seed;
+
+    state = {
+      characterName: name,
+      settingSeed: seed,
+      maxHealth: 10,
+      health: 10,
+      inventory: [],
+      summary: '',
+      recent: [],
+      gameOver: false
+    };
+
+    setupScreen.style.display = 'none';
+    gameScreen.classList.add('active');
+    logEl.innerHTML = '';
+    gameOverSlot.innerHTML = '';
+    updateSheet();
+
+    setBusy(true);
+    callGM('Comienza la historia. Preséntame la escena inicial y mi situación de partida.').then(res => {
+      state.health = Math.max(0, Math.min(state.maxHealth, state.health + (res.health_delta || 0)));
+      (res.add_items || []).forEach(it => state.inventory.push(it));
+      state.summary = res.summary || '';
+      state.recent.push({ role:'user', content:'Comienza la historia.' });
+      state.recent.push({ role:'assistant', content: JSON.stringify(res) });
+      updateSheet();
+
+      const nTxt = renderTurn('narration', '');
+      setBusy(false);
+      typewrite(nTxt, res.narration || '...', () => renderChoices(res.choices));
+    }).catch(err => {
+      setBusy(false);
+      setupErr.textContent = '';
+      const nTxt = renderTurn('narration', '');
+      nTxt.innerHTML = `<p style="color:var(--blood-bright)">No se pudo iniciar la historia (${(err.message||'error').replace(/</g,'&lt;')}). Prueba a comenzar de nuevo.</p>`;
+    });
+  });
+
+  sendBtn.addEventListener('click', () => submitAction());
+  actionInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitAction(); });
+  restartBtn.addEventListener('click', resetToSetup);
+
+})();
+</script>
+</body>
+</html>
